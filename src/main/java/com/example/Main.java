@@ -73,6 +73,13 @@ public class Main {
       return "error";
     }
   }
+  
+	@RequestMapping("/hello")
+	String hello(Map<String, Object> model) {
+    model.put("data", "Esta es la informacion de salida");
+    return "hello";
+	}
+
 
   @Bean
   public DataSource dataSource() throws SQLException {
