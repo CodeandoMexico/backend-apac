@@ -15,6 +15,7 @@
  */
 package com.example;
 
+import com.google.gson.Gson;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.ModelAndView;
 
 @Controller
 @SpringBootApplication
@@ -45,7 +47,7 @@ public class Main {
 
     @Autowired
     private DataSource dataSource;
-
+    
     public static void main(String[] args) throws Exception {
         SpringApplication.run(Main.class, args);
     }
@@ -54,7 +56,7 @@ public class Main {
     String index() {
         return "index";
     }
-
+    
     @RequestMapping("/db")
     String db(Map<String, Object> model) {
         try (Connection connection = dataSource.getConnection()) {
@@ -82,12 +84,13 @@ public class Main {
         return "hello";
     }
 
-    @RequestMapping(name="/consulta", method = RequestMethod.POST)
-    String hello(Map<String, Object> model, @RequestParam("u") String user, @RequestParam("p") String password, @RequestParam("t") String tipo) {
-        String query = "select id_centro, superusuario from apac_schema.administrador where usuario = '" + user + "' and contrasenia = '" + password + "';";
+    @RequestMapping(value="/usuario", produces = "application/json")
+    String Usuarios(Map<String, Object> model) {
+        String query = "select id_centro from apac_schema.usuario where usuario = ceis;";
         Connection connection = null;
         Statement stmt = null;
         ResultSet rs = null;
+        Gson gson = new Gson();
         try {
             connection = dataSource.getConnection();
             stmt = connection.createStatement();
@@ -96,11 +99,10 @@ public class Main {
             Map<String, String> output = new HashMap<String, String>();
             while (rs.next()) {
                 output.put("id_centro", rs.getString("id_centro"));
-                output.put("superusuario", rs.getString("superusuario"));
             }
 
-            model.put("usuarios", output);
-            return "consulta";
+            model.put("error", output);
+            return gson.toJson(output);
         } catch (Exception e) {
             model.put("message", e.getMessage());
             return "error";
