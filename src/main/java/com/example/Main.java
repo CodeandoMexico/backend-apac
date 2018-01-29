@@ -15,7 +15,6 @@
  */
 package com.example;
 
-import com.google.gson.Gson;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,16 +31,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.ModelAndView;
 
 @Controller
 @SpringBootApplication
 public class Main {
 
+    public static final String API_V1 = "/apac_api_v1/";
+    
+    
     @Value("${spring.datasource.url}")
     private String dbUrl;
 
@@ -75,46 +73,6 @@ public class Main {
         } catch (Exception e) {
             model.put("message", e.getMessage());
             return "error";
-        }
-    }
-
-    @RequestMapping("/hello")
-    String hello(Map<String, Object> model) {
-        model.put("data", "Esta es la informacion de salida");
-        return "hello";
-    }
-
-    @RequestMapping(value="/usuario", produces = "application/json")
-    String Usuarios(Map<String, Object> model) {
-        String query = "select id_centro from apac_schema.usuario where usuario = ceis;";
-        Connection connection = null;
-        Statement stmt = null;
-        ResultSet rs = null;
-        Gson gson = new Gson();
-        try {
-            connection = dataSource.getConnection();
-            stmt = connection.createStatement();
-            rs = stmt.executeQuery(query);
-
-            Map<String, String> output = new HashMap<String, String>();
-            while (rs.next()) {
-                output.put("id_centro", rs.getString("id_centro"));
-            }
-
-            model.put("error", output);
-            return gson.toJson(output);
-        } catch (Exception e) {
-            model.put("message", e.getMessage());
-            return "error";
-        } finally {
-            try {
-                rs.close();
-                stmt.close();
-                connection.close();
-            } catch (Exception e) {
-                model.put("message", e.getMessage());
-                return "error";
-            }
         }
     }
 
