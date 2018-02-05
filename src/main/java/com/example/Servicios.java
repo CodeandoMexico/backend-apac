@@ -10,7 +10,6 @@ import com.google.gson.Gson;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.Statement;
 import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
@@ -18,7 +17,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -99,18 +97,18 @@ public class Servicios {
     @RequestMapping(value = ENDPOINT_EVALUADORES, method = RequestMethod.POST)
     @ResponseBody
     public HttpEntity<String> setEvaluadores(@RequestParam("v") String evaluadores, @RequestParam("d") String digestion) {
-
+        ApacBaseDTO dto = new ApacBaseDTO();
         String llave = "qzIn2O4fFro4SrquFyiXiRPCes9KqlmNjtFZJzwjgcvXhe6nkfvT+FL81ozGg0YSruFMdhPUjmNDP7DIMbSf5A==";
         if (evaluadores != null && !evaluadores.isEmpty() && digestion != null && !digestion.isEmpty()) {
-            ApacBaseDTO dto = new ApacBaseDTO();
+
             dto.setLlave(llave);
             dto.setValor(evaluadores);
             dto.setDigestion(digestion);
-            if(actualizaBDServicio(dto)>0) {
+            if (actualizaBDServicio(dto) > 0) {
                 return new ResponseEntity<>(HttpStatus.OK);
             }
         }
-        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(new Gson().toJson(dto), HttpStatus.BAD_REQUEST);
 
     }
 
@@ -144,9 +142,15 @@ public class Servicios {
             return null;
         } finally {
             try {
-                rs.close();
-                stmt.close();
-                connection.close();
+                if (rs != null) {
+                    rs.close();
+                }
+                if (stmt != null) {
+                    stmt.close();
+                }
+                if (connection != null) {
+                    connection.close();
+                }
             } catch (Exception e) {
                 return null;
             }
@@ -160,9 +164,10 @@ public class Servicios {
                 + "	b.digestion = '" + dto.getDigestion() + "',\n"
                 + "	b.ultima_actualizacion = (extract(epoch from now() at time zone 'UTC')*1000)::bigint \n"
                 + "	where b.llave = '" + dto.getLlave() + "';";
+
         Connection connection = null;
         PreparedStatement stmt = null;
-        
+
         try {
             connection = dataSource.getConnection();
             stmt = connection.prepareStatement(query);
@@ -171,8 +176,12 @@ public class Servicios {
             return -1;
         } finally {
             try {
-                stmt.close();
-                connection.close();
+                if (stmt != null) {
+                    stmt.close();
+                }
+                if (connection != null) {
+                    connection.close();
+                }
             } catch (Exception e) {
                 return -2;
             }
