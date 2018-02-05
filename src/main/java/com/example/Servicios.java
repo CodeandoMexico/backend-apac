@@ -160,11 +160,11 @@ public class Servicios {
     private int actualizaBDServicio(ApacBaseDTO dto) {
 
         String query = "update apac_schema.informacion_base b \n"
-                + "	set b.valor = '" + dto.getValor() + "',\n"
-                + "	b.digestion = '" + dto.getDigestion() + "',\n"
-                + "	b.ultima_actualizacion = (extract(epoch from now() at time zone 'UTC')*1000)::bigint \n"
+                + "	set valor = '" + dto.getValor() + "',\n"
+                + "	digestion = '" + dto.getDigestion() + "',\n"
+                + "	ultima_actualizacion = (extract(epoch from now() at time zone 'UTC')*1000)::bigint \n"
                 + "	where b.llave = '" + dto.getLlave() + "';";
-
+        
         Connection connection = null;
         PreparedStatement stmt = null;
 
