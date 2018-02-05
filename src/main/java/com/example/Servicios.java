@@ -8,6 +8,7 @@ package com.example;
 import com.example.dao.ApacBaseDTO;
 import com.google.gson.Gson;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import javax.sql.DataSource;
@@ -17,8 +18,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
@@ -43,12 +46,12 @@ public class Servicios {
 
         String llave = "heNFkdTzSGbKsseIX4bBB33tZGWFgmyRDlRu2DnCRrRMHxepY0H7liUJmc4I25yFcfThuq8Os59QjUwaQCDAkQ==";
         String response = consultaBDServicio(llave);
-        
-        if(response != null) {
+
+        if (response != null) {
             return new ResponseEntity<>(response, HttpStatus.OK);
         }
         return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        
+
     }
 
     @RequestMapping(value = ENDPOINT_ALUMNOS, method = RequestMethod.GET)
@@ -57,43 +60,60 @@ public class Servicios {
 
         String llave = "DJGK22ya891zn3I3wFE1KpJacWmiTL+NhKmi7HWgmDkh4C7pmdmFp98vV1ruA+55tdicbvJFQuqJ33IFo1eqyw==";
         String response = consultaBDServicio(llave);
-        
-        if(response != null) {
+
+        if (response != null) {
             return new ResponseEntity<>(response, HttpStatus.OK);
         }
         return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        
+
     }
-    
+
     @RequestMapping(value = ENDPOINT_ALUMNOS_X_CENTRO, method = RequestMethod.GET)
     @ResponseBody
     public HttpEntity<String> getAlumnosXCentro() {
 
         String llave = "P2iExqhMcOepEZa5vUKQrqA62DPUlmhOxQhfPjXLMEJ3KNq+dGMmQm0EaIJZ4xmVZPNVHONmYbmPSxJgxHvaWw==";
         String response = consultaBDServicio(llave);
-        
-        if(response != null) {
+
+        if (response != null) {
             return new ResponseEntity<>(response, HttpStatus.OK);
         }
         return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        
+
     }
-    
+
     @RequestMapping(value = ENDPOINT_EVALUADORES, method = RequestMethod.GET)
     @ResponseBody
     public HttpEntity<String> getEvaluadores() {
 
         String llave = "qzIn2O4fFro4SrquFyiXiRPCes9KqlmNjtFZJzwjgcvXhe6nkfvT+FL81ozGg0YSruFMdhPUjmNDP7DIMbSf5A==";
         String response = consultaBDServicio(llave);
-        
-        if(response != null) {
+
+        if (response != null) {
             return new ResponseEntity<>(response, HttpStatus.OK);
         }
         return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        
+
     }
-    
-    
+
+    @RequestMapping(value = ENDPOINT_EVALUADORES, method = RequestMethod.POST)
+    @ResponseBody
+    public HttpEntity<String> setEvaluadores(@RequestParam("v") String evaluadores, @RequestParam("d") String digestion) {
+
+        String llave = "qzIn2O4fFro4SrquFyiXiRPCes9KqlmNjtFZJzwjgcvXhe6nkfvT+FL81ozGg0YSruFMdhPUjmNDP7DIMbSf5A==";
+        if (evaluadores != null && !evaluadores.isEmpty() && digestion != null && !digestion.isEmpty()) {
+            ApacBaseDTO dto = new ApacBaseDTO();
+            dto.setLlave(llave);
+            dto.setValor(evaluadores);
+            dto.setDigestion(digestion);
+            if(actualizaBDServicio(dto)>0) {
+                return new ResponseEntity<>(HttpStatus.OK);
+            }
+        }
+        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+
+    }
+
     private String consultaBDServicio(String digestionServicio) {
 
         String query = "select \n"
@@ -104,15 +124,15 @@ public class Servicios {
                 + "	from apac_schema.informacion_base b \n"
                 + "	where b.llave = '" + digestionServicio + "';";
         Connection connection = null;
-        Statement stmt = null;
+        PreparedStatement stmt = null;
         ResultSet rs = null;
         Gson gson = new Gson();
         ApacBaseDTO dto = new ApacBaseDTO();
 
         try {
             connection = dataSource.getConnection();
-            stmt = connection.createStatement();
-            rs = stmt.executeQuery(query);
+            stmt = connection.prepareStatement(query);
+            rs = stmt.executeQuery();
             while (rs.next()) {
                 dto.setLlave(rs.getString("llave"));
                 dto.setValor(rs.getString("valor"));
@@ -129,6 +149,32 @@ public class Servicios {
                 connection.close();
             } catch (Exception e) {
                 return null;
+            }
+        }
+    }
+
+    private int actualizaBDServicio(ApacBaseDTO dto) {
+
+        String query = "update apac_schema.informacion_base b \n"
+                + "	set b.valor = '" + dto.getValor() + "',\n"
+                + "	b.digestion = '" + dto.getDigestion() + "',\n"
+                + "	b.ultima_actualizacion = (extract(epoch from now() at time zone 'UTC')*1000)::bigint \n"
+                + "	where b.llave = '" + dto.getLlave() + "';";
+        Connection connection = null;
+        PreparedStatement stmt = null;
+        
+        try {
+            connection = dataSource.getConnection();
+            stmt = connection.prepareStatement(query);
+            return stmt.executeUpdate();
+        } catch (Exception e) {
+            return -1;
+        } finally {
+            try {
+                stmt.close();
+                connection.close();
+            } catch (Exception e) {
+                return -2;
             }
         }
     }
