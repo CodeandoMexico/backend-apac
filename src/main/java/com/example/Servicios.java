@@ -34,6 +34,8 @@ public class Servicios {
     public static final String ENDPOINT_ALUMNOS = "alumnos";
     public static final String ENDPOINT_ALUMNOS_X_CENTRO = "alumnosxcentro";
     public static final String ENDPOINT_EVALUADORES = "evaluadores";
+    public static final String ENDPOINT_EVALUACIONES_REGISTRO = "evaluaciones_reg";
+    public static final String ENDPOINT_EVALUACIONES_CONSULTA_ID = "evaluaciones_con";
 
     @Autowired
     private DataSource dataSource;
@@ -112,6 +114,42 @@ public class Servicios {
 
     }
 
+    @RequestMapping(value = ENDPOINT_EVALUACIONES_REGISTRO, method = RequestMethod.POST)
+    @ResponseBody
+    public HttpEntity<String> setEvaluaciones(@RequestParam("k") String idEvaluacion, @RequestParam("v") String evaluacion, @RequestParam("d") String digestion, @RequestParam("x") String adicional) {
+        ApacBaseDTO dto = new ApacBaseDTO();
+        if (idEvaluacion != null && !idEvaluacion.isEmpty()
+                && evaluacion != null && !evaluacion.isEmpty()
+                && digestion != null && !digestion.isEmpty()
+                && adicional != null && !adicional.isEmpty()) {
+
+            dto.setLlave(idEvaluacion);
+            dto.setValor(evaluacion);
+            dto.setDigestion(digestion);
+
+            if (registraEvaluacionBD(dto, adicional) > 0) {
+                return new ResponseEntity<>(HttpStatus.OK);
+            }
+        }
+        return new ResponseEntity<>(new Gson().toJson(dto), HttpStatus.BAD_REQUEST);
+
+    }
+
+    @RequestMapping(value = ENDPOINT_EVALUACIONES_CONSULTA_ID, method = RequestMethod.POST)
+    @ResponseBody
+    public HttpEntity<String> getEvaluacion(@RequestParam("v") String evaluacion, @RequestParam("d") String digestion) {
+        if (evaluacion != null && !evaluacion.isEmpty()
+                && digestion != null && !digestion.isEmpty()
+                && evaluacion.equals(digestion)) {
+            String respuesta = consultaEvaluacionBD(evaluacion);
+            if (respuesta != null) {
+                return new ResponseEntity<>(respuesta,HttpStatus.OK);
+            }
+        }
+        return new ResponseEntity<>(evaluacion+"-"+digestion, HttpStatus.BAD_REQUEST);
+
+    }
+
     private String consultaBDServicio(String digestionServicio) {
 
         String query = "select \n"
@@ -164,7 +202,7 @@ public class Servicios {
                 + "	digestion = '" + dto.getDigestion() + "',\n"
                 + "	ultima_actualizacion = (extract(epoch from now() at time zone 'UTC')*1000)::bigint \n"
                 + "	where b.llave = '" + dto.getLlave() + "';";
-        
+
         Connection connection = null;
         PreparedStatement stmt = null;
 
@@ -184,6 +222,96 @@ public class Servicios {
                 }
             } catch (Exception e) {
                 return -2;
+            }
+        }
+    }
+
+    private int registraEvaluacionBD(ApacBaseDTO dto, String extra) {
+
+        String query = "insert into apac_schema.informacion_eval (\n"
+                + "	llave,\n"
+                + "	valor,\n"
+                + "	digestion,\n"
+                + "	estampa_generacion,\n"
+                + "	detalle\n"
+                + "	)\n"
+                + "	values (\n"
+                + "	" + dto.getLlave() + ",\n"
+                + "	" + dto.getValor() + ",\n"
+                + "	" + dto.getDigestion() + ",\n"
+                + "       (extract(epoch from now() at time zone 'UTC')*1000)::bigint,"
+                + "	" + extra + ",\n"
+                + "	);";
+
+        Connection connection = null;
+        PreparedStatement stmt = null;
+
+        try {
+            connection = dataSource.getConnection();
+            stmt = connection.prepareStatement(query);
+            return stmt.executeUpdate();
+        } catch (Exception e) {
+            return -1;
+        } finally {
+            try {
+                if (stmt != null) {
+                    stmt.close();
+                }
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (Exception e) {
+                return -2;
+            }
+        }
+    }
+
+    private String consultaEvaluacionBD(String valor) {
+
+        String query = "select \n"
+                + "	e.llave,\n"
+                + "	e.valor,\n"
+                + "	e.digestion,\n"
+                + "	e.estampa_generacion,\n"
+                + "	e.detalle\n"
+                + "from apac_schema.informacion_eval e\n"
+                + "where split_part(e.detalle,'-',1) = '" + valor + "'\n"
+                + "order by e.estampa_generacion desc limit 1;";
+
+        Connection connection = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        
+        Gson gson = new Gson();
+        ApacBaseDTO dto = new ApacBaseDTO();
+        dto.setLlave("ND");
+
+        try {
+            connection = dataSource.getConnection();
+            stmt = connection.prepareStatement(query);
+            rs = stmt.executeQuery();
+            while (rs.next()) {
+                dto.setLlave(rs.getString("llave"));
+                dto.setValor(rs.getString("valor"));
+                dto.setDigestion(rs.getString("digestion"));
+                dto.setUltimaActualizacion(rs.getLong("estampa_generacion"));
+            }
+            return gson.toJson(dto);
+        } catch (Exception e) {
+            return null;
+        } finally {
+            try {
+                if (rs != null) {
+                    rs.close();
+                }
+                if (stmt != null) {
+                    stmt.close();
+                }
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (Exception e) {
+                return null;
             }
         }
     }
