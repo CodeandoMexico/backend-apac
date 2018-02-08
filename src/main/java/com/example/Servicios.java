@@ -226,7 +226,7 @@ public class Servicios {
         }
     }
 
-    private int registraEvaluacionBD(ApacBaseDTO dto, String extra) {
+    private int registraEvaluacionBD(ApacBaseDTO dto, String adicional) {
 
         String query = "insert into apac_schema.informacion_eval (\n"
                 + "	llave,\n"
@@ -236,11 +236,11 @@ public class Servicios {
                 + "	detalle\n"
                 + "	)\n"
                 + "	values (\n"
-                + "	" + dto.getLlave() + ",\n"
-                + "	" + dto.getValor() + ",\n"
-                + "	" + dto.getDigestion() + ",\n"
+                + "	'" + dto.getLlave() + "',\n"
+                + "	'" + dto.getValor() + "',\n"
+                + "	'" + dto.getDigestion() + "',\n"
                 + "       (extract(epoch from now() at time zone 'UTC')*1000)::bigint,"
-                + "	" + extra + ",\n"
+                + "	'" + adicional + "',\n"
                 + "	);";
 
         Connection connection = null;
