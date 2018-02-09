@@ -240,7 +240,7 @@ public class Servicios {
                 + "	'" + dto.getValor() + "',\n"
                 + "	'" + dto.getDigestion() + "',\n"
                 + "       (extract(epoch from now() at time zone 'UTC')*1000)::bigint,"
-                + "	'" + adicional + "',\n"
+                + "	'" + adicional + "'\n"
                 + "	);";
 
         Connection connection = null;
@@ -274,9 +274,9 @@ public class Servicios {
                 + "	e.digestion,\n"
                 + "	e.estampa_generacion,\n"
                 + "	e.detalle\n"
-                + "from apac_schema.informacion_eval e\n"
-                + "where split_part(e.detalle,'-',1) = '" + valor + "'\n"
-                + "order by e.estampa_generacion desc limit 1;";
+                + " from apac_schema.informacion_eval e\n"
+                + " where split_part(e.detalle,'-',1) = '" + valor + "'\n"
+                + " order by e.estampa_generacion desc limit 1;";
 
         Connection connection = null;
         PreparedStatement stmt = null;
