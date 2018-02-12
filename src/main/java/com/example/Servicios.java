@@ -53,6 +53,27 @@ public class Servicios {
         return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
 
     }
+    
+    @RequestMapping(value = ENDPOINT_USUARIOS, method = RequestMethod.POST)
+    @ResponseBody
+    public HttpEntity<String> setUsers(@RequestParam("v") String usuarios, @RequestParam("d") String digestion) {
+
+        ApacBaseDTO dto = new ApacBaseDTO();
+        String llave = "heNFkdTzSGbKsseIX4bBB33tZGWFgmyRDlRu2DnCRrRMHxepY0H7liUJmc4I25yFcfThuq8Os59QjUwaQCDAkQ==";
+        
+        if (usuarios != null && !usuarios.isEmpty() && digestion != null && !digestion.isEmpty()) {
+
+            dto.setLlave(llave);
+            dto.setValor(usuarios);
+            dto.setDigestion(digestion);
+            if (actualizaBDServicio(dto) > 0) {
+                return new ResponseEntity<>(HttpStatus.OK);
+            }
+        }
+        
+        return new ResponseEntity<>(new Gson().toJson(dto),HttpStatus.INTERNAL_SERVER_ERROR);
+
+    }
 
     @RequestMapping(value = ENDPOINT_ALUMNOS, method = RequestMethod.GET)
     @ResponseBody
