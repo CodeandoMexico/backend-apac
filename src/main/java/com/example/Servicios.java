@@ -88,6 +88,28 @@ public class Servicios {
         return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
 
     }
+    
+    @RequestMapping(value = ENDPOINT_ALUMNOS, method = RequestMethod.POST)
+    @ResponseBody
+    public HttpEntity<String> setAlumnos(@RequestParam("v") String alumnos, @RequestParam("d") String digestion) {
+
+        ApacBaseDTO dto = new ApacBaseDTO();
+        
+        String llave = "DJGK22ya891zn3I3wFE1KpJacWmiTL+NhKmi7HWgmDkh4C7pmdmFp98vV1ruA+55tdicbvJFQuqJ33IFo1eqyw==";
+        
+        if (alumnos != null && !alumnos.isEmpty() && digestion != null && !digestion.isEmpty()) {
+
+            dto.setLlave(llave);
+            dto.setValor(alumnos);
+            dto.setDigestion(digestion);
+            if (actualizaBDServicio(dto) > 0) {
+                return new ResponseEntity<>(HttpStatus.OK);
+            }
+        }
+        
+        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+
+    }
 
     @RequestMapping(value = ENDPOINT_ALUMNOS_X_CENTRO, method = RequestMethod.GET)
     @ResponseBody
@@ -99,6 +121,28 @@ public class Servicios {
         if (response != null) {
             return new ResponseEntity<>(response, HttpStatus.OK);
         }
+        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+
+    }
+    
+    @RequestMapping(value = ENDPOINT_ALUMNOS_X_CENTRO, method = RequestMethod.POST)
+    @ResponseBody
+    public HttpEntity<String> setAlumnosXCentro(@RequestParam("v") String alumnosXcentro, @RequestParam("d") String digestion) {
+
+        ApacBaseDTO dto = new ApacBaseDTO();
+        
+        String llave = "P2iExqhMcOepEZa5vUKQrqA62DPUlmhOxQhfPjXLMEJ3KNq+dGMmQm0EaIJZ4xmVZPNVHONmYbmPSxJgxHvaWw==";
+        
+        if (alumnosXcentro != null && !alumnosXcentro.isEmpty() && digestion != null && !digestion.isEmpty()) {
+
+            dto.setLlave(llave);
+            dto.setValor(alumnosXcentro);
+            dto.setDigestion(digestion);
+            if (actualizaBDServicio(dto) > 0) {
+                return new ResponseEntity<>(HttpStatus.OK);
+            }
+        }
+        
         return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
 
     }
