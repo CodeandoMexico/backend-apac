@@ -54,7 +54,7 @@ public class Servicios {
 
     }
     
-    @RequestMapping(value = ENDPOINT_USUARIOS, method = RequestMethod.POST)
+    @RequestMapping(value = ENDPOINT_USUARIOS, method = RequestMethod.POST, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseBody
     public HttpEntity<String> setUsers(@RequestParam("v") String usuarios, @RequestParam("d") String digestion) {
 
