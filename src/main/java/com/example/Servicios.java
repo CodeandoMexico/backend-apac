@@ -54,7 +54,7 @@ public class Servicios {
 
     }
     
-    @RequestMapping(value = ENDPOINT_USUARIOS, method = RequestMethod.POST, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @RequestMapping(value = ENDPOINT_USUARIOS, method = RequestMethod.POST)
     @ResponseBody
     public HttpEntity<String> setUsers(@RequestParam("v") String usuarios, @RequestParam("d") String digestion) {
 
@@ -212,6 +212,21 @@ public class Servicios {
             }
         }
         return new ResponseEntity<>(evaluacion+"-"+digestion, HttpStatus.BAD_REQUEST);
+
+    }
+    
+    @RequestMapping(value = "solicitud_multipart", method = RequestMethod.POST)
+    @ResponseBody
+    public HttpEntity<String> getSolicitudMultipart(@RequestParam("v") String valor, @RequestParam("d") String digestion) {
+        if (valor != null && !valor.isEmpty()
+                && digestion != null && !digestion.isEmpty()
+                && valor.equals(digestion)) {
+            String respuesta = digestion+"-"+valor;
+            if (respuesta != null) {
+                return new ResponseEntity<>(respuesta,HttpStatus.OK);
+            }
+        }
+        return new ResponseEntity<>(digestion+"--"+valor, HttpStatus.BAD_REQUEST);
 
     }
 
