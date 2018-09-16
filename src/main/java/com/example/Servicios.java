@@ -10,8 +10,12 @@ import com.google.gson.Gson;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 import javax.sql.DataSource;
+import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.audit.InMemoryAuditEventRepository;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -36,6 +40,10 @@ public class Servicios {
     public static final String ENDPOINT_EVALUADORES = "evaluadores";
     public static final String ENDPOINT_EVALUACIONES_REGISTRO = "evaluaciones_reg";
     public static final String ENDPOINT_EVALUACIONES_CONSULTA_ID = "evaluaciones_con";
+    public static final int CONSULTA_EVALUACIONES_POR_ALUMNO = 1;
+    public static final int CONSULTA_EVALUACIONES_POR_EVALUADOR = 2;
+    public static final int CONSULTA_EVALUACIONES_POR_PERIODO = 3;
+    
 
     @Autowired
     private DataSource dataSource;
@@ -50,7 +58,7 @@ public class Servicios {
         if (response != null) {
             return new ResponseEntity<>(response, HttpStatus.OK);
         }
-        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
     }
     
@@ -71,7 +79,7 @@ public class Servicios {
             }
         }
         
-        return new ResponseEntity<>(new Gson().toJson(dto),HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(new Gson().toJson(dto),HttpStatus.BAD_REQUEST);
 
     }
 
@@ -85,7 +93,7 @@ public class Servicios {
         if (response != null) {
             return new ResponseEntity<>(response, HttpStatus.OK);
         }
-        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
     }
     
@@ -107,7 +115,7 @@ public class Servicios {
             }
         }
         
-        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
     }
 
@@ -121,7 +129,7 @@ public class Servicios {
         if (response != null) {
             return new ResponseEntity<>(response, HttpStatus.OK);
         }
-        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
     }
     
@@ -143,7 +151,7 @@ public class Servicios {
             }
         }
         
-        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
     }
 
@@ -157,7 +165,7 @@ public class Servicios {
         if (response != null) {
             return new ResponseEntity<>(response, HttpStatus.OK);
         }
-        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
     }
 
@@ -202,34 +210,23 @@ public class Servicios {
 
     @RequestMapping(value = ENDPOINT_EVALUACIONES_CONSULTA_ID, method = RequestMethod.POST)
     @ResponseBody
-    public HttpEntity<String> getEvaluacion(@RequestParam("v") String evaluacion, @RequestParam("d") String digestion) {
-        if (evaluacion != null && !evaluacion.isEmpty()
+    public HttpEntity<String> getEvaluacion(@RequestParam("k") String tipoConsulta, @RequestParam("v") String evaluacion, @RequestParam("d") String digestion) {
+        if (tipoConsulta != null
+                && (tipoConsulta.equals(String.valueOf(CONSULTA_EVALUACIONES_POR_ALUMNO))
+                || tipoConsulta.equals(String.valueOf(CONSULTA_EVALUACIONES_POR_ALUMNO))
+                || tipoConsulta.equals(String.valueOf(CONSULTA_EVALUACIONES_POR_ALUMNO)))
+                && evaluacion != null && !evaluacion.isEmpty()
                 && digestion != null && !digestion.isEmpty()
                 && evaluacion.equals(digestion)) {
-            String respuesta = consultaEvaluacionBD(evaluacion);
+            String respuesta = consultaEvaluacionBD(Integer.valueOf(tipoConsulta), evaluacion);
             if (respuesta != null) {
                 return new ResponseEntity<>(respuesta,HttpStatus.OK);
             }
         }
-        return new ResponseEntity<>(evaluacion+"-"+digestion, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(tipoConsulta+"-"+evaluacion+"-"+digestion, HttpStatus.BAD_REQUEST);
 
     }
     
-    @RequestMapping(value = "solicitud_multipart", method = RequestMethod.POST)
-    @ResponseBody
-    public HttpEntity<String> getSolicitudMultipart(@RequestParam("v") String valor, @RequestParam("d") String digestion) {
-        if (valor != null && !valor.isEmpty()
-                && digestion != null && !digestion.isEmpty()
-                && valor.equals(digestion)) {
-            String respuesta = digestion+"-"+valor;
-            if (respuesta != null) {
-                return new ResponseEntity<>(respuesta,HttpStatus.OK);
-            }
-        }
-        return new ResponseEntity<>(digestion+"--"+valor, HttpStatus.BAD_REQUEST);
-
-    }
-
     private String consultaBDServicio(String digestionServicio) {
 
         String query = "select \n"
@@ -346,37 +343,80 @@ public class Servicios {
         }
     }
 
-    private String consultaEvaluacionBD(String valor) {
+    private String generaConsulta(int tipoConsulta, String valor) {
+        
+        String predicadoCampos = "select"
+                + " e.llave,"
+                + " e.valor,"
+                + " e.digestion,"
+                + " e.estampa_generacion,"
+                + " e.detalle"
+                + " from apac_schema.informacion_eval e";
+                
+        String predicadoClasificacion = " where";
+        String predicadoPresentacion = " order by e.estampa_generacion desc;";
+        
+        switch(tipoConsulta) {
+            case CONSULTA_EVALUACIONES_POR_ALUMNO:
+                //Se considera el campo detalle con formato idAlumno-idEvaluador
+                predicadoClasificacion += " split_part(e.detalle,'-',1) = '" + valor + "'";
+                break;
+            case CONSULTA_EVALUACIONES_POR_EVALUADOR:
+                //Se considera el campo detalle con formato idAlumno-idEvaluador
+                predicadoClasificacion += " split_part(e.detalle,'-',2) = '" + valor + "'";
+                break;
+            case CONSULTA_EVALUACIONES_POR_PERIODO:
+                //Se debe tener en el valor la estructura inicio-fin con tiempos Unix(long)
+                String [] estampas = valor.split("-");
+                if(estampas.length != 2) {
+                    //El valor no cuenta con las dos estampas de tiempo
+                    return null;
+                }
+                try {
+                    Long.valueOf(estampas[0]);
+                    Long.valueOf(estampas[1]);
+                } catch (NumberFormatException nfe) {
+                    //Los valores no corresponden a tiempos Unix en segundos
+                    return null;
+                }
+                predicadoClasificacion += " e.estampa_generacion between "+ estampas[0] +" and "+ estampas[1];
+                break;
+            default:
+                //Tipo de consulta invalida
+                return null;
+                //break;
+        }
+        return predicadoCampos + predicadoClasificacion + predicadoPresentacion;    
+    }
+    
+    private String consultaEvaluacionBD(int tipoConsulta, String valor) {
 
-        String query = "select \n"
-                + "	e.llave,\n"
-                + "	e.valor,\n"
-                + "	e.digestion,\n"
-                + "	e.estampa_generacion,\n"
-                + "	e.detalle\n"
-                + " from apac_schema.informacion_eval e\n"
-                + " where split_part(e.detalle,'-',1) = '" + valor + "'\n"
-                + " order by e.estampa_generacion desc limit 1;";
+        Gson gson = new Gson();
+        List<ApacBaseDTO> listaResultados = new ArrayList<>();
+        ApacBaseDTO dto;
 
         Connection connection = null;
         PreparedStatement stmt = null;
         ResultSet rs = null;
-        
-        Gson gson = new Gson();
-        ApacBaseDTO dto = new ApacBaseDTO();
-        dto.setLlave("ND");
 
+        String query = generaConsulta(tipoConsulta, valor);
+        if(query == null) {
+            return null;
+        }
+        
         try {
             connection = dataSource.getConnection();
             stmt = connection.prepareStatement(query);
             rs = stmt.executeQuery();
             while (rs.next()) {
+                dto = new ApacBaseDTO();
                 dto.setLlave(rs.getString("llave"));
                 dto.setValor(rs.getString("valor"));
                 dto.setDigestion(rs.getString("digestion"));
                 dto.setUltimaActualizacion(rs.getLong("estampa_generacion"));
+                listaResultados.add(dto);
             }
-            return gson.toJson(dto);
+            return gson.toJson(listaResultados);
         } catch (Exception e) {
             return null;
         } finally {
