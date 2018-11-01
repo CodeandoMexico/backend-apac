@@ -31,6 +31,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
             http.httpBasic().and().authorizeRequests().antMatchers(Main.API_V1+"**").hasRole("USER")
                     .and().csrf().disable().headers().frameOptions().disable();
+            
+            http.httpBasic().and().authorizeRequests().antMatchers(Main.API_V2+"**").hasRole("USER")
+            .and().csrf().disable().headers().frameOptions().disable();
 
 	}
 

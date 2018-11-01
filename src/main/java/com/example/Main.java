@@ -38,6 +38,7 @@ import java.util.Map;
 public class Main {
 
     public static final String API_V1 = "/apac_api_v1/";
+    public static final String API_V2 = "/apac_api_v2/";
     
     
     @Value("${spring.datasource.url}")
