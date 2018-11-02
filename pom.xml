@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.example</groupId>
-    <artifactId>java-getting-started</artifactId>
+    <artifactId>apacapi</artifactId>
     <version>1.0</version>
 
     <parent>
@@ -22,8 +22,13 @@
         <webjars-jquery-ui.version>1.11.4</webjars-jquery-ui.version>
         <webjars-jquery.version>2.2.4</webjars-jquery.version>
         <thymeleaf.version>3.0.2.RELEASE</thymeleaf.version>
+        <!--<docker.image.prefix>${env.DOCKER_REGISTRY}</docker.image.prefix>
+        <docker.registry>${env.DOCKER_REGISTRY}</docker.registry>-->
+        <azure.containerRegistry>acrapacdev</azure.containerRegistry>
+        <docker.image.prefix>${azure.containerRegistry}.azurecr.io</docker.image.prefix>
     </properties>
 
+    
     <dependencies>
         <!-- Spring and Spring Boot dependencies -->
         <dependency>
@@ -121,6 +126,52 @@
                     </execution>
                 </executions>
             </plugin>
+
+        
+            <plugin>
+                <groupId>com.spotify</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <version>1.0.0</version>
+                <!--
+                <configuration>
+                    <imageName>${docker.image.prefix}/${project.artifactId}</imageName>
+                    <baseImage>java</baseImage>
+                    <entryPoint>["java", "-jar", "/${project.build.finalName}.jar"]</entryPoint>
+                    <resources>
+                    <resource>
+                        <targetPath>/</targetPath>
+                        <directory>${project.build.directory}</directory>
+                        <include>${project.build.finalName}.jar</include>
+                    </resource>
+                    </resources>
+                    <serverId>${docker.registry}</serverId>
+                    <registryUrl>https://${docker.registry}</registryUrl>
+                </configuration>
+                -->
+                 <configuration>
+                    <imageName>${docker.image.prefix}/${project.artifactId}</imageName>
+                    <registryUrl>https://${docker.image.prefix}</registryUrl>
+                    <serverId>${azure.containerRegistry}</serverId>
+                    <dockerDirectory>docker</dockerDirectory>
+                    <resources>
+                        <resource>
+                            <targetPath>/</targetPath>
+                            <directory>${project.build.directory}</directory>
+                            <include>${project.build.finalName}.jar</include>
+                        </resource>
+                    </resources>
+                </configuration>
+
+                <dependencies>
+                    <dependency>
+                        <groupId>javax.activation</groupId>
+                        <artifactId>activation</artifactId>
+                        <version>1.1.1</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        
+    
         </plugins>
     </build>
 
